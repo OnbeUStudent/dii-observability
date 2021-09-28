@@ -1,0 +1,16 @@
+replicas: 1
+minimumMasterNodes: 1
+clusterHealthCheckParams: 'wait_for_status=yellow&timeout=1s'
+
+readinessProbe:
+   failureThreshold: 3
+   initialDelaySeconds: 200
+   periodSeconds: 10
+   successThreshold: 3
+   timeoutSeconds: 5
+
+
+   #https://stackoverflow.com/questions/64533991/k8s-elasticsearch-with-filebeat-is-keeping-not-ready-after-rebooting
+   #https://github.com/elastic/helm-charts/issues/909
+
+   

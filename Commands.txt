@@ -1,0 +1,57 @@
+####  https://kubernetes.io/docs/tasks/tools/install-kubectl-windows/   
+####  https://phoenixnap.com/kb/install-helm
+####  https://docs.microsoft.com/en-us/cli/azure/install-azure-cli-windows?tabs=azure-cli
+####  https://chrome.google.com/webstore/detail/elasticsearch-head/ffmkiejjmecolpfloofpjologoblkegm?hl=en-US
+
+#### Login to Az Cli 
+az login --service-principal -u "{ClientId}" -p "{Client Secret}" --tenant "{tenantid}"
+https://privnote.com/7pRdXY4v#jqvEPhs4Y
+
+
+#### login to AKS
+az aks get-credentials -n aks-{Team Color}-westus2-bc -g rg-{Team Color}-bootcamp --admin
+
+
+#### install Elastic Search 
+helm repo add elasticsearch https://helm.elastic.co
+helm repo update
+helm upgrade elasticsearch elasticsearch/elasticsearch --namespace observability --create-namespace --install --wait  -f elasticsearch.yml
+
+#### Open Ports for local access (only for bootcamp)
+kubectl apply -f elasticsearch_service.yml
+kubectl port-forward elasticsearch-master-0 9200 -n observability
+
+
+#### install fluent-bit
+helm repo add fluent https://fluent.github.io/helm-charts
+helm repo update
+helm upgrade fluent-bit fluent/fluent-bit --namespace observability --create-namespace --install --wait  -f fluentbit.yml
+kubectl --namespace observability port-forward myfluentbit-ghf6x 2020:2020
+
+#### install zipkin
+kubectl apply -f zipkin.yml
+kubectl apply -f dapr-config.yml
+
+helm repo add grafana https://grafana.github.io/helm-charts
+helm repo update
+helm upgrade grafana grafana/grafana --namespace observability --create-namespace --install --wait  --set persistence.enabled=false
+kubectl apply -f grafana_service.yml
+-- to get pwd
+kubectl get secret -n observability grafana -o jsonpath="{.data}"
+-- PS convert base64
+[Text.Encoding]::Utf8.GetString([Convert]::FromBase64String('{base64 string}'))
+
+sources: 
+es : http://elasticsearch-master-svc.observability.svc.cluster.local:9200
+zipkin: http://zipkin.production.svc.cluster.local:9411
+
+
+Prometheus: 
+helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+helm repo update
+helm upgrade dapr-prom prometheus-community/prometheus --namespace observability --create-namespace --install --wait  --set alertmanager.persistentVolume.enable=false --set pushgateway.persistentVolume.enabled=false --set server.persistentVolume.enabled=false
+----grafana datasource
+Add datasource : Settings -> DataSource -> select Prometheus -> ( get name from k get svc -n log) {http://dapr-prom-prometheus-server.observability}
+
+kubectl port-forward {portname} -n production 15704:9090 
+https://github.com/dapr/dapr/blob/master/docs/development/dapr-metrics.md
